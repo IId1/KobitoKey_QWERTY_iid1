@@ -175,14 +175,24 @@
 /* wrist_mouse（子機2 ID=1）:
  * - トグルOFF時: 通常は無反応、Layer 5 (32/37長押し) 中のみカーソル移動
  * - トグルON時 (Layer 2: 21+22+23 / 25+26+27): 常時カーソル移動（Layer 5中ももちろん有効）
+ * - マウスレイヤー中に 31 または 38 を 0.3秒以上長押し (Layer 7) している間は上下左右ホイールスクロール
  */
 &wrist_mouse_listener {
     status = "okay";
 
-    /* 通常レイヤー(Layer 2 OFF かつ Layer 5 OFF)では完全無効化 */
+    /* 通常レイヤー(Layer 2 / 5 / 7 いずれも OFF)では完全無効化 */
     input-processors = <&zip_drop_xy>;
 
-    /* Layer 2 (常時ONトグル) または Layer 5 (32/37長押しマウスレイヤー) のいずれかが有効ならカーソル移動 */
+    /* 優先度1: Layer 7 (31または38を0.3秒以上長押し中) は上下左右ホイールスクロール */
+    scroll_layer {
+        layers = <7>;
+        input-processors =
+            <&zip_xy_to_scroll_mapper>,
+            <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>,
+            <&zip_scroll_scaler 1 8>;
+    };
+
+    /* 優先度2: Layer 2 (常時ONトグル) または Layer 5 (32/37長押しマウスレイヤー) のいずれかが有効ならカーソル移動 */
     cursor_layer {
         layers = <2 5>;
         input-processors = <&zip_xy_scaler 1 1>;
