@@ -1,0 +1,63 @@
+#include <dt-bindings/zmk/matrix_transform.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+    chosen {
+        zmk,kscan = &kscan0;
+        zmk,matrix-transform = &default_transform;
+    };
+
+    default_transform: keymap_transform_0 {
+        compatible = "zmk,matrix-transform";
+        columns = <1>;
+        rows = <1>;
+        /* KobitoKey 側の 0〜39 番と重複しない列オフセットを指定 */
+        col-offset = <10>;
+        map = <
+            RC(0,0)
+        >;
+    };
+
+    /* キースイッチのないセンサー単体子機のためダミー登録（未接続D0をプルアップ固定） */
+    kscan0: kscan {
+        compatible = "zmk,kscan-gpio-direct";
+        input-gpios = <&xiao_d 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+    };
+};
+
+&xiao_spi {
+    status = "okay";
+    cs-gpios = <&xiao_d 7 GPIO_ACTIVE_LOW>;
+
+    pmw3360: pmw3360@0 {
+        status = "okay";
+        compatible = "pixart,pmw3360";
+        reg = <0>;
+        spi-max-frequency = <2000000>;
+        irq-gpios = <&xiao_d 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        cpi = <1600>;
+        /* 必要に応じて手首の向きに合わせて軸反転を有効化 */
+        /* invert-x; */
+        /* invert-y; */
+    };
+};
+
+/ {
+    /* split ID=1 (左トラボの ID=0 と分離) で親機 KobitoKey_right へ送信 */
+    split_inputs {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        wrist_mouse_split: wrist_mouse_split@1 {
+            compatible = "zmk,input-split";
+            reg = <1>;
+            device = <&pmw3360>;
+        };
+    };
+};
+
+/* D6 (IRQ) と D7 (CS) を GPIO として使用するため UART0 を無効化 */
+&xiao_serial {
+    status = "disabled";
+};
+

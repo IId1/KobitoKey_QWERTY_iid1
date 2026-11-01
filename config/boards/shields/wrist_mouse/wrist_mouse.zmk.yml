@@ -1,0 +1,8 @@
+file_format: "1"
+id: wrist_mouse
+name: Wrist Mouse
+type: shield
+requires: [seeeduino_xiao_ble]
+features:
+  - pointer
+

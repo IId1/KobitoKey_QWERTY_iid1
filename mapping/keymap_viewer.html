@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KobitoKey + Wrist Mouse キーマップビューア ＆ PNG出力ツール</title>
+<style>
+  :root {
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --border: #cbd5e1;
+    --accent: #0284c7;
+    --accent-hover: #0369a1;
+    --emerald: #0d9488;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Meiryo UI", "Yu Gothic UI", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    padding: 12px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .brand h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .brand span {
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn {
+    appearance: none;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: #1e293b;
+    color: #f8fafc;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover { background: #334155; }
+  .btn.primary {
+    background: var(--accent);
+    border-color: #38bdf8;
+  }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.emerald {
+    background: var(--emerald);
+    border-color: #2dd4bf;
+  }
+  .btn.emerald:hover { background: #0f766e; }
+
+  .tabs-bar {
+    background: #ffffff;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .tab-btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    color: #334155;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .tab-btn:hover { background: #e2e8f0; }
+  .tab-btn.active {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+  }
+
+  main {
+    max-width: 1760px;
+    margin: 20px auto 48px;
+    padding: 0 20px;
+  }
+  .canvas-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+    text-align: center;
+  }
+  .canvas-card canvas {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    display: block;
+    margin: 0 auto;
+  }
+  .hint-bar {
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>KobitoKey + Wrist Mouse キーマップビューア</h1>
+    <span>親機: 右XIAO ／ 子機1: 左XIAO ／ 子機2: Wrist Mouse (32・37長押し時のみカーソル有効)</span>
+  </div>
+  <div class="toolbar">
+    <button class="btn primary" onclick="downloadCurrentViewPng()">📥 表示中の画像をPNG保存</button>
+    <button class="btn emerald" onclick="downloadModePng('summary', 'kobitokey_map_with_table.png')">🖼️ 一体型シート(図+表)をPNG保存</button>
+    <button class="btn" onclick="downloadModePng('nummap', 'kobitokey_button_map.png')">🔢 番号マップをPNG保存</button>
+    <button class="btn" onclick="downloadModePng('alllayers', 'kobitokey_all_layers.png')">🗂️ 全レイヤー一覧をPNG保存</button>
+  </div>
+</header>
+
+<div class="tabs-bar" id="tabsBar">
+  <button class="tab-btn active" data-mode="summary">📊 一体型シート（番号マップ ＋ 全レイヤー ＋ 対応表）</button>
+  <button class="tab-btn" data-mode="nummap">🔢 番号マップ単体 (0〜42)</button>
+  <button class="tab-btn" data-mode="alllayers">🗂️ 全5レイヤー一覧</button>
+  <button class="tab-btn" data-mode="layer0">Layer 0 : DEFAULT</button>
+  <button class="tab-btn" data-mode="layer1">Layer 1 : NUMBER</button>
+  <button class="tab-btn" data-mode="layer2">Layer 2 : FUNCTION</button>
+  <button class="tab-btn" data-mode="layer3">Layer 3 : MOUSE</button>
+  <button class="tab-btn" data-mode="layer4">Layer 4 : SYMBOL</button>
+</div>
+
+<main>
+  <div class="canvas-card">
+    <canvas id="mainCanvas"></canvas>
+    <div class="hint-bar">
+      <span id="viewInfo">表示モード: 一体型シート</span>
+      <span>右上のボタンからいつでも高解像度 PNG をダウンロードできます（オフライン動作対応）。</span>
+    </div>
+  </div>
+</main>
+
+<script>
+// ============================================================================
+// 1. 物理キー配置定義 (0〜39) & ポインティングデバイス (40, 41, 42)
+// ============================================================================
+const KEYS_GEO = [
+  // Row 0 (0..9)
+  { id: 0,  pos: "左・上段 小指",     side: "L", x: 158,  y: 286, a: 0 },
+  { id: 1,  pos: "左・上段 薬指",     side: "L", x: 244,  y: 233, a: 0 },
+  { id: 2,  pos: "左・上段 中指",     side: "L", x: 330,  y: 211, a: 0 },
+  { id: 3,  pos: "左・上段 人差指",   side: "L", x: 416,  y: 222, a: 0 },
+  { id: 4,  pos: "左・上段 人差指内", side: "L", x: 502,  y: 233, a: 0 },
+  { id: 5,  pos: "右・上段 人差指内", side: "R", x: 938,  y: 233, a: 0 },
+  { id: 6,  pos: "右・上段 人差指",   side: "R", x: 1024, y: 222, a: 0 },
+  { id: 7,  pos: "右・上段 中指",     side: "R", x: 1110, y: 211, a: 0 },
+  { id: 8,  pos: "右・上段 薬指",     side: "R", x: 1196, y: 233, a: 0 },
+  { id: 9,  pos: "右・上段 小指",     side: "R", x: 1282, y: 286, a: 0 },
+  // Row 1 (10..19)
+  { id: 10, pos: "左・中段 小指",     side: "L", x: 158,  y: 372, a: 0 },
+  { id: 11, pos: "左・中段 薬指",     side: "L", x: 244,  y: 319, a: 0 },
+  { id: 12, pos: "左・中段 中指",     side: "L", x: 330,  y: 297, a: 0 },
+  { id: 13, pos: "左・中段 人差指",   side: "L", x: 416,  y: 308, a: 0 },
+  { id: 14, pos: "左・中段 人差指内", side: "L", x: 502,  y: 319, a: 0 },
+  { id: 15, pos: "右・中段 人差指内", side: "R", x: 938,  y: 319, a: 0 },
+  { id: 16, pos: "右・中段 人差指",   side: "R", x: 1024, y: 308, a: 0 },
+  { id: 17, pos: "右・中段 中指",     side: "R", x: 1110, y: 297, a: 0 },
+  { id: 18, pos: "右・中段 薬指",     side: "R", x: 1196, y: 319, a: 0 },
+  { id: 19, pos: "右・中段 小指",     side: "R", x: 1282, y: 372, a: 0 },
+  // Row 2 (20..29)
+  { id: 20, pos: "左・下段 小指",     side: "L", x: 158,  y: 458, a: 0 },
+  { id: 21, pos: "左・下段 薬指",     side: "L", x: 244,  y: 405, a: 0 },
+  { id: 22, pos: "左・下段 中指",     side: "L", x: 330,  y: 383, a: 0 },
+  { id: 23, pos: "左・下段 人差指",   side: "L", x: 416,  y: 394, a: 0 },
+  { id: 24, pos: "左・下段 人差指内", side: "L", x: 502,  y: 405, a: 0 },
+  { id: 25, pos: "右・下段 人差指内", side: "R", x: 938,  y: 405, a: 0 },
+  { id: 26, pos: "右・下段 人差指",   side: "R", x: 1024, y: 394, a: 0 },
+  { id: 27, pos: "右・下段 中指",     side: "R", x: 1110, y: 383, a: 0 },
+  { id: 28, pos: "右・下段 薬指",     side: "R", x: 1196, y: 405, a: 0 },
+  { id: 29, pos: "右・下段 小指",     side: "R", x: 1282, y: 458, a: 0 },
+  // Row 3 (30..39)
+  { id: 30, pos: "左・最下段 小指",   side: "L", x: 158,  y: 544, a: 0 },
+  { id: 31, pos: "左・最下段 薬指",   side: "L", x: 244,  y: 491, a: 0 },
+  { id: 32, pos: "左・親指 外",       side: "L", x: 360,  y: 491, a: 0 },
+  { id: 33, pos: "左・親指 中",       side: "L", x: 456,  y: 502, a: 14 },
+  { id: 34, pos: "左・親指 内",       side: "L", x: 543,  y: 536, a: 28 },
+  { id: 35, pos: "右・親指 内",       side: "R", x: 897,  y: 536, a: -28 },
+  { id: 36, pos: "右・親指 中",       side: "R", x: 984,  y: 502, a: -14 },
+  { id: 37, pos: "右・親指 外",       side: "R", x: 1080, y: 491, a: 0 },
+  { id: 38, pos: "右・最下段 薬指",   side: "R", x: 1196, y: 491, a: 0 },
+  { id: 39, pos: "右・最下段 小指",   side: "R", x: 1282, y: 544, a: 0 }
+];
+
+const TRACKBALLS_GEO = [
+  { id: 40, name: "左トラックボール (子機1)", x: 614, y: 422 },
+  { id: 41, name: "右トラックボール (親機)",  x: 826, y: 422 }
+];
+
+const WRIST_MOUSE_GEO = {
+  id: 42,
+  name: "Wrist Mouse (子機2 / PMW3360)",
+  x: 720,
+  y: 598,
+  w: 196,
+  h: 68
+};
+
+const COMBOS = [
+  { a: 0,  b: 1,  pair: "0 + 1",   keys: "Q + W", out: "ESC",          badge: "ESC" },
+  { a: 10, b: 11, pair: "10 + 11", keys: "A + S", out: "TAB",          badge: "TAB" },
+  { a: 12, b: 13, pair: "12 + 13", keys: "D + F", out: "英数 (LANG2)", badge: "英数" },
+  { a: 16, b: 17, pair: "16 + 17", keys: "J + K", out: "かな (LANG1)", badge: "かな" }
+];
+
+// ============================================================================
+// 2. 各レイヤー割り当てデータ
+// ============================================================================
+const LAYERS = [
+  {
+    key: "layer0",
+    shortTitle: "Layer 0 (DEFAULT)",
+    title: "Layer 0 : DEFAULT（基本レイヤー ＋ コンボ）",
+    showCombos: true,
+    tb40: { m: "カーソル操作", s: "自動マウス対応" },
+    tb41: { m: "カーソル操作", s: "自動マウス対応" },
+    wm42: { m: "無効 (待機中)", s: "32/37長押で有効", active: false },
+    items: [
+      { m: "Q", t: "Q" }, { m: "W", t: "W" }, { m: "E", t: "E" }, { m: "R", t: "R" }, { m: "T", t: "T" },
+      { m: "Y", t: "Y" }, { m: "U", t: "U" }, { m: "I", t: "I" }, { m: "O", t: "O" }, { m: "P", t: "P" },
+
+      { m: "A", t: "A" }, { m: "S", t: "S" }, { m: "D", t: "D" }, { m: "F", t: "F" }, { m: "G", t: "G" },
+      { m: "H", t: "H" }, { m: "J", t: "J" }, { m: "K", t: "K" }, { m: "L", t: "L" }, { m: ";", t: "; (SEMI)" },
+
+      { m: "Z", t: "Z" }, { m: "X", t: "X" }, { m: "C", t: "C" }, { m: "V", t: "V" }, { m: "B", t: "B" },
+      { m: "N", t: "N" }, { m: "M", t: "M" }, { m: ",", t: ", (COMMA)" }, { m: ".", t: ". (DOT)" }, { m: "'", t: "' (APOS)" },
+
+      { m: "LShift", t: "LShift" },
+      { m: "Win", s: "LGUI", bt: true, t: "Winキー (LGUI)" },
+      { m: "英語", s: "Hold:L3", hl: true, t: "英語(LANG2) / 長押:L3" },
+      { m: "Space", s: "Hold:L2", hl: true, t: "Space / 長押:L2" },
+      { m: "LCtrl", t: "LCtrl" },
+      { m: "BSPC", t: "BackSpace" },
+      { m: "Enter", s: "Hold:L1", hl: true, t: "Enter / 長押:L1" },
+      { m: "日本語", s: "Hold:L3", hl: true, t: "日本語(LANG1) / 長押:L3" },
+      { m: "-", s: "MINUS", bt: true, t: "- (MINUS)" },
+      { m: "/", s: "Hold:L4", hl: true, t: "/ (SLASH) / 長押:L4" }
+    ]
+  },
+  {
+    key: "layer1",
+    shortTitle: "Layer 1 (NUMBER / 36長押)",
+    title: "Layer 1 : NUMBER & ARROW（36番 長押し中）",
+    showCombos: false,
+    tb40: { m: "カーソル操作", s: "共通" },
+    tb41: { m: "カーソル操作", s: "共通" },
+    wm42: { m: "無効 (待機中)", s: "32/37長押のみ", active: false },
+    items: [
+      { m: "0", t: "0" }, { m: "1", t: "1" }, { m: "2", t: "2" }, { m: "3", t: "3" }, { m: "", t: "▽" },
+      { m: "-", t: "- (MINUS)" }, { m: "", t: "▽" }, { m: "↑", t: "↑ (UP)" }, { m: "", t: "▽" }, { m: "", t: "▽" },
+
+      { m: "=", t: "= (EQUAL)" }, { m: "4", t: "4" }, { m: "5", t: "5" }, { m: "6", t: "6" }, { m: "", t: "▽" },
+      { m: "+", t: "+ (PLUS)" }, { m: "←", t: "← (LEFT)" }, { m: "↓", t: "↓ (DOWN)" }, { m: "→", t: "→ (RIGHT)" }, { m: "", t: "▽" },
+
+      { m: "", t: "▽" }, { m: "7", t: "7" }, { m: "8", t: "8" }, { m: "9", t: "9" }, { m: "", t: "▽" },
+      { m: "*", t: "* (ASTRK)" }, { m: "/", t: "/ (SLASH)" }, { m: "[", t: "[ (LBKT)" }, { m: "]", t: "] (RBKT)" }, { m: "", t: "▽" },
+
+      { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "LShift", t: "LShift" }, { m: "", t: "▽" },
+      { m: "", t: "▽" }, { m: "(Hold中)", trig: true, t: "(Layer 1 保持)" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }
+    ]
+  },
+  {
+    key: "layer2",
+    shortTitle: "Layer 2 (FN & BT / 33長押)",
+    title: "Layer 2 : FUNCTION & BT（33番 長押し中 — 左:F1〜F12 ／ 右:BT・DEL）",
+    showCombos: false,
+    tb40: { m: "カーソル操作", s: "共通" },
+    tb41: { m: "カーソル操作", s: "共通" },
+    wm42: { m: "無効 (待機中)", s: "32/37長押のみ", active: false },
+    items: [
+      { m: "", t: "▽" }, { m: "F1", hl: true, t: "F1" }, { m: "F2", hl: true, t: "F2" }, { m: "F3", hl: true, t: "F3" }, { m: "", t: "▽" },
+      { m: "BT 0", bt: true, t: "BT 0 (BT_SEL 0)" }, { m: "BT 1", bt: true, t: "BT 1 (BT_SEL 1)" }, { m: "BT 2", bt: true, t: "BT 2 (BT_SEL 2)" }, { m: "BT 3", bt: true, t: "BT 3 (BT_SEL 3)" }, { m: "BT 4", bt: true, t: "BT 4 (BT_SEL 4)" },
+
+      { m: "", t: "▽" }, { m: "F4", hl: true, t: "F4" }, { m: "F5", hl: true, t: "F5" }, { m: "F6", hl: true, t: "F6" }, { m: "", t: "▽" },
+      { m: "BT解除", s: "BT_CLR", bt: true, t: "BT解除 (BT_CLR)" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" },
+
+      { m: "F10", hl: true, t: "F10" }, { m: "F7", hl: true, t: "F7" }, { m: "F8", hl: true, t: "F8" }, { m: "F9", hl: true, t: "F9" }, { m: "", t: "▽" },
+      { m: "全解除", s: "CLR_ALL", bt: true, t: "BT全解除" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" },
+
+      { m: "", t: "▽" }, { m: "F11", hl: true, t: "F11" }, { m: "F12", hl: true, t: "F12" }, { m: "(Hold中)", trig: true, t: "(Layer 2 保持)" }, { m: "", t: "▽" },
+      { m: "DEL", t: "Delete (DEL)" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }
+    ]
+  },
+  {
+    key: "layer3",
+    shortTitle: "Layer 3 (MOUSE / 32・37長押)",
+    title: "Layer 3 : MOUSE（32・37長押しで Wrist Mouse 有効 ／ 31・38を0.3秒長押しで上下左右ホイール）",
+    showCombos: false,
+    tb40: { m: "カーソル操作", s: "31/38で縦横Scr", trig: true },
+    tb41: { m: "カーソル操作", s: "31/38で縦横Scr", trig: true },
+    wm42: { m: "カーソル移動 ON!", s: "32/37長押中のみ", active: true },
+    items: [
+      { m: "", t: "▽" },
+      { m: "戻る", s: "MB4", bt: true, t: "戻る (MB4) ★" },
+      { m: "", t: "▽" },
+      { m: "進む", s: "MB5", bt: true, t: "進む (MB5) ★" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "戻る", s: "MB4", bt: true, t: "戻る (MB4) ★" },
+      { m: "", t: "▽" },
+      { m: "進む", s: "MB5", bt: true, t: "進む (MB5) ★" },
+      { m: "", t: "▽" },
+
+      { m: "", t: "▽" },
+      { m: "右Click", s: "MB2", hl: true, t: "右クリック (MB2) ★" },
+      { m: "中Click", s: "MB3", hl: true, t: "ホイール押込 (MB3) ★" },
+      { m: "左Click", s: "MB1", hl: true, t: "左クリック (MB1) ★" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "左Click", s: "MB1", hl: true, t: "左クリック (MB1) ★" },
+      { m: "中Click", s: "MB3", hl: true, t: "ホイール押込 (MB3) ★" },
+      { m: "右Click", s: "MB2", hl: true, t: "右クリック (MB2) ★" },
+      { m: "", t: "▽" },
+
+      { m: "LShift", t: "LShift ★" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "RShift", t: "RShift ★" },
+
+      { m: "LCtrl", t: "LCtrl ★" },
+      { m: "Wheel", s: "0.3s長押", sc: true, t: "0.3秒押:縦横Wheel ★" },
+      { m: "(Hold中)", trig: true, t: "(32長押で保持)" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "(Hold中)", trig: true, t: "(37長押で保持)" },
+      { m: "Wheel", s: "0.3s長押", sc: true, t: "0.3秒押:縦横Wheel ★" },
+      { m: "RCtrl", t: "RCtrl ★" }
+    ]
+  },
+  {
+    key: "layer4",
+    shortTitle: "Layer 4 (SYMBOL / 39長押)",
+    title: "Layer 4 : SYMBOL（39番 長押し中 — 左手側に記号配置）",
+    showCombos: false,
+    tb40: { m: "カーソル操作", s: "共通" },
+    tb41: { m: "カーソル操作", s: "共通" },
+    wm42: { m: "無効 (待機中)", s: "32/37長押のみ", active: false },
+    items: [
+      { m: "!", s: "EXCL", hl: true, t: "! (EXCL)" },
+      { m: "@", s: "AT", hl: true, t: "@ (AT)" },
+      { m: "#", s: "HASH", hl: true, t: "# (HASH)" },
+      { m: "$", s: "DLLR", hl: true, t: "$ (DLLR)" },
+      { m: "%", s: "PRCNT", hl: true, t: "% (PRCNT)" },
+      { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" },
+
+      { m: "^", s: "CARET", hl: true, t: "^ (CARET)" },
+      { m: "&", s: "AMPS", hl: true, t: "& (AMPS)" },
+      { m: "*", s: "ASTRK", hl: true, t: "* (ASTRK)" },
+      { m: "(", s: "LPAR", hl: true, t: "( (LPAR)" },
+      { m: ")", s: "RPAR", hl: true, t: ") (RPAR)" },
+      { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" },
+
+      { m: "`", s: "GRAVE", hl: true, t: "` (GRAVE)" },
+      { m: "~", s: "TILDE", hl: true, t: "~ (TILDE)" },
+      { m: "{", s: "LBRC", hl: true, t: "{ (LBRC)" },
+      { m: "}", s: "RBRC", hl: true, t: "} (RBRC)" },
+      { m: "|", s: "PIPE", hl: true, t: "| (PIPE)" },
+      { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" },
+
+      { m: "", t: "▽ (LShift)" },
+      { m: "_", s: "UNDER", hl: true, t: "_ (UNDER)" },
+      { m: "-", s: "MINUS", hl: true, t: "- (MINUS)" },
+      { m: "+", s: "PLUS", hl: true, t: "+ (PLUS)" },
+      { m: "\\", s: "BSLH", hl: true, t: "\\ (BSLH)" },
+      { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" }, { m: "", t: "▽" },
+      { m: "(Hold中)", trig: true, t: "(Layer 4 保持)" }
+    ]
+  }
+];
+
+// ============================================================================
+// 3. Canvas 描画エンジン
+// ============================================================================
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawCard(ctx, x, y, w, h, r = 16) {
+  ctx.save();
+  roundRect(ctx, x + 2, y + 4, w, h, r);
+  ctx.fillStyle = "rgba(15, 23, 42, 0.08)";
+  ctx.fill();
+  roundRect(ctx, x, y, w, h, r);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 番号マップ単体 (1440 x 760)
+function renderNumberMapScene(ctx, ox, oy, scale) {
+  ctx.save();
+  ctx.translate(ox, oy);
+  ctx.scale(scale, scale);
+
+  roundRect(ctx, 0, 0, 1440, 760, 14);
+  ctx.fillStyle = "#f8fafc";
+  ctx.fill();
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#1e293b";
+  ctx.font = "bold 23px 'Meiryo UI', sans-serif";
+  ctx.fillText("KobitoKey + Wrist Mouse ボタン・センサー番号マップ", 720, 44);
+
+  ctx.fillStyle = "#64748b";
+  ctx.font = "bold 15px 'Meiryo UI', sans-serif";
+  ctx.fillText("LEFT（左手側 ／ 子機1 Peripheral）", 360, 114);
+  ctx.fillStyle = "#0369a1";
+  ctx.fillText("RIGHT（右手側 ／ 親機 Central ★）", 1080, 114);
+
+  ctx.save();
+  ctx.setLineDash([8, 6]);
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(720, 108);
+  ctx.lineTo(720, 548);
+  ctx.stroke();
+  ctx.restore();
+
+  const keySize = 68, innerSize = 56;
+  for (const k of KEYS_GEO) {
+    ctx.save();
+    ctx.translate(k.x, k.y);
+    if (k.a) ctx.rotate((k.a * Math.PI) / 180);
+
+    roundRect(ctx, -keySize/2 + 2, -keySize/2 + 4, keySize, keySize, 11);
+    ctx.fillStyle = "rgba(15,23,42,0.16)";
+    ctx.fill();
+
+    roundRect(ctx, -keySize/2, -keySize/2, keySize, keySize, 11);
+    ctx.fillStyle = "#1e293b";
+    ctx.fill();
+
+    roundRect(ctx, -innerSize/2, -innerSize/2 - 1.5, innerSize, innerSize, 8);
+    ctx.fillStyle = "#334155";
+    ctx.fill();
+    ctx.strokeStyle = "#475569";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "bold 24px 'Segoe UI', sans-serif";
+    ctx.fillText(String(k.id), k.x, k.y - 1);
+  }
+
+  for (const tb of TRACKBALLS_GEO) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(tb.x + 2, tb.y + 4, 45, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(15,23,42,0.16)";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(tb.x, tb.y, 45, 0, Math.PI * 2);
+    ctx.fillStyle = "#cbd5e1";
+    ctx.fill();
+    ctx.strokeStyle = "#64748b";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    const grad = ctx.createRadialGradient(tb.x - 10, tb.y - 10, 4, tb.x, tb.y, 37);
+    grad.addColorStop(0, "#38bdf8");
+    grad.addColorStop(1, "#0369a1");
+    ctx.beginPath();
+    ctx.arc(tb.x, tb.y, 35, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = "#0e7490";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px 'Segoe UI', sans-serif";
+    ctx.fillText(String(tb.id), tb.x, tb.y);
+    ctx.restore();
+  }
+
+  // Wrist Mouse (42)
+  const wm = WRIST_MOUSE_GEO;
+  ctx.save();
+  roundRect(ctx, wm.x - wm.w/2 + 2, wm.y - wm.h/2 + 4, wm.w, wm.h, 34);
+  ctx.fillStyle = "rgba(15,23,42,0.16)";
+  ctx.fill();
+  roundRect(ctx, wm.x - wm.w/2, wm.y - wm.h/2, wm.w, wm.h, 34);
+  const wgrad = ctx.createLinearGradient(wm.x - wm.w/2, wm.y - wm.h/2, wm.x + wm.w/2, wm.y + wm.h/2);
+  wgrad.addColorStop(0, "#7c3aed");
+  wgrad.addColorStop(1, "#4f46e5");
+  ctx.fillStyle = wgrad;
+  ctx.fill();
+  ctx.strokeStyle = "#c4b5fd";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 24px 'Segoe UI', sans-serif";
+  ctx.fillText("42", wm.x, wm.y - 8);
+  ctx.font = "bold 12px 'Meiryo UI', sans-serif";
+  ctx.fillStyle = "#ede9fe";
+  ctx.fillText("Wrist Mouse (子機2)", wm.x, wm.y + 16);
+  ctx.restore();
+
+  // Legend
+  ctx.font = "14.5px 'Meiryo UI', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#1e293b";
+  ctx.fillText("0～39: キー   |   40: 左トラボ(子機1)   |   41: 右トラボ(親機)   |   42: Wrist Mouse(子機2・32/37長押し時のみ有効)", 720, 696);
+
+  ctx.restore();
+}
+
+// 各レイヤー (1440 x 760)
+function renderLayerScene(ctx, layer, ox, oy, scale) {
+  ctx.save();
+  ctx.translate(ox, oy);
+  ctx.scale(scale, scale);
+
+  roundRect(ctx, 0, 0, 1440, 760, 14);
+  ctx.fillStyle = "#f8fafc";
+  ctx.fill();
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#0f172a";
+  ctx.font = "bold 21px 'Meiryo UI', sans-serif";
+  ctx.fillText(layer.title, 720, 42);
+
+  ctx.fillStyle = "#64748b";
+  ctx.font = "bold 14.5px 'Meiryo UI', sans-serif";
+  ctx.fillText("LEFT（左手側 ／ 子機1）", 360, 112);
+  ctx.fillStyle = "#0369a1";
+  ctx.fillText("RIGHT（右手側 ／ 親機 Central ★）", 1080, 112);
+
+  ctx.save();
+  ctx.setLineDash([8, 6]);
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(720, 106);
+  ctx.lineTo(720, 548);
+  ctx.stroke();
+  ctx.restore();
+
+  if (layer.showCombos) {
+    ctx.save();
+    ctx.strokeStyle = "#0284c7";
+    ctx.lineWidth = 4;
+    for (const cp of COMBOS) {
+      const ka = KEYS_GEO[cp.a], kb = KEYS_GEO[cp.b];
+      ctx.beginPath();
+      ctx.moveTo(ka.x, ka.y);
+      ctx.lineTo(kb.x, kb.y);
+      ctx.stroke();
+      for (const kk of [ka, kb]) {
+        roundRect(ctx, kk.x - 38, kk.y - 38, 76, 76, 14);
+        ctx.fillStyle = "rgba(14, 165, 233, 0.22)";
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  const keySize = 68, innerSize = 58;
+  for (let i = 0; i < 40; i++) {
+    const k = KEYS_GEO[i];
+    const item = layer.items[i];
+    const isTrans = !item.m;
+
+    ctx.save();
+    ctx.translate(k.x, k.y);
+    if (k.a) ctx.rotate((k.a * Math.PI) / 180);
+
+    roundRect(ctx, -keySize/2 + 2, -keySize/2 + 4, keySize, keySize, 11);
+    ctx.fillStyle = "rgba(15,23,42,0.12)";
+    ctx.fill();
+
+    let baseCol = "#1e293b", topCol = "#334155", strokeCol = "#64748b";
+    if (item.trig) {
+      baseCol = "#b45309"; topCol = "#d97706"; strokeCol = "#fbbf24";
+    } else if (item.sc) {
+      baseCol = "#0f766e"; topCol = "#0d9488"; strokeCol = "#5eead4";
+    } else if (isTrans) {
+      baseCol = "#cbd5e1"; topCol = "#e2e8f0"; strokeCol = "#94a3b8";
+    }
+
+    roundRect(ctx, -keySize/2, -keySize/2, keySize, keySize, 11);
+    ctx.fillStyle = baseCol;
+    ctx.fill();
+
+    roundRect(ctx, -innerSize/2, -innerSize/2 - 1, innerSize, innerSize, 8);
+    ctx.fillStyle = topCol;
+    ctx.fill();
+    ctx.strokeStyle = strokeCol;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = isTrans ? "#64748b" : "#94a3b8";
+    ctx.font = "bold 11px 'Segoe UI', sans-serif";
+    ctx.fillText(String(k.id), k.x - 25, k.y - 21);
+
+    ctx.textAlign = "center";
+    if (!isTrans) {
+      const len = item.m.length;
+      ctx.font = len <= 2 ? "bold 20px 'Meiryo UI', sans-serif"
+               : len <= 5 ? "bold 14px 'Meiryo UI', sans-serif"
+               : "bold 12px 'Meiryo UI', sans-serif";
+      ctx.fillStyle = item.trig ? "#fffbeb"
+                    : item.sc   ? "#ccfbf1"
+                    : item.hl   ? "#fbbf24"
+                    : item.bt   ? "#7dd3fc"
+                    : "#f8fafc";
+      const yOff = item.s ? -5 : 3;
+      ctx.fillText(item.m, k.x, k.y + yOff);
+
+      if (item.s) {
+        ctx.font = "bold 10.5px 'Meiryo UI', sans-serif";
+        ctx.fillStyle = "#e2e8f0";
+        ctx.fillText(item.s, k.x, k.y + 16);
+      }
+    } else {
+      ctx.font = "bold 12px 'Meiryo UI', sans-serif";
+      ctx.fillStyle = "#94a3b8";
+      ctx.fillText("▽", k.x, k.y + 2);
+    }
+  }
+
+  if (layer.showCombos) {
+    for (const cp of COMBOS) {
+      const ka = KEYS_GEO[cp.a], kb = KEYS_GEO[cp.b];
+      const mx = (ka.x + kb.x) / 2, my = (ka.y + kb.y) / 2;
+      roundRect(ctx, mx - 23, my - 12, 46, 24, 10);
+      ctx.fillStyle = "#0284c7";
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 12px 'Meiryo UI', sans-serif";
+      ctx.fillText(cp.badge, mx, my + 1);
+    }
+  }
+
+  // Trackballs (40, 41)
+  const tbPair = [
+    { ...TRACKBALLS_GEO[0], info: layer.tb40 },
+    { ...TRACKBALLS_GEO[1], info: layer.tb41 }
+  ];
+  for (const tb of tbPair) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(tb.x + 2, tb.y + 4, 46, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(15,23,42,0.14)";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(tb.x, tb.y, 46, 0, Math.PI * 2);
+    ctx.fillStyle = "#cbd5e1";
+    ctx.fill();
+    ctx.strokeStyle = "#64748b";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    const grad = ctx.createRadialGradient(tb.x - 10, tb.y - 10, 4, tb.x, tb.y, 38);
+    if (tb.info.trig) {
+      grad.addColorStop(0, "#2dd4bf");
+      grad.addColorStop(1, "#0f766e");
+    } else {
+      grad.addColorStop(0, "#38bdf8");
+      grad.addColorStop(1, "#0369a1");
+    }
+    ctx.beginPath();
+    ctx.arc(tb.x, tb.y, 36, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 11px 'Segoe UI', sans-serif";
+    ctx.fillText(String(tb.id), tb.x, tb.y - 22);
+    ctx.font = "bold 11px 'Meiryo UI', sans-serif";
+    ctx.fillText(tb.info.m, tb.x, tb.y - 2);
+    if (tb.info.s) {
+      ctx.font = "bold 9.5px 'Meiryo UI', sans-serif";
+      ctx.fillStyle = "#e0f2fe";
+      ctx.fillText(tb.info.s, tb.x, tb.y + 13);
+    }
+    ctx.restore();
+  }
+
+  // Wrist Mouse (42)
+  const wm = WRIST_MOUSE_GEO;
+  const wInfo = layer.wm42;
+  ctx.save();
+  roundRect(ctx, wm.x - wm.w/2 + 2, wm.y - wm.h/2 + 3, wm.w, wm.h, 34);
+  ctx.fillStyle = "rgba(15,23,42,0.12)";
+  ctx.fill();
+  roundRect(ctx, wm.x - wm.w/2, wm.y - wm.h/2, wm.w, wm.h, 34);
+  if (wInfo.active) {
+    const wg = ctx.createLinearGradient(wm.x - wm.w/2, wm.y - wm.h/2, wm.x + wm.w/2, wm.y + wm.h/2);
+    wg.addColorStop(0, "#7c3aed");
+    wg.addColorStop(1, "#4f46e5");
+    ctx.fillStyle = wg;
+    ctx.fill();
+    ctx.strokeStyle = "#c4b5fd";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 11px 'Segoe UI', sans-serif";
+    ctx.fillText("42 : Wrist Mouse", wm.x, wm.y - 16);
+    ctx.font = "bold 13.5px 'Meiryo UI', sans-serif";
+    ctx.fillStyle = "#fef08a";
+    ctx.fillText(wInfo.m, wm.x, wm.y + 2);
+    ctx.font = "bold 10.5px 'Meiryo UI', sans-serif";
+    ctx.fillStyle = "#ede9fe";
+    ctx.fillText(wInfo.s, wm.x, wm.y + 19);
+  } else {
+    ctx.fillStyle = "#e2e8f0";
+    ctx.fill();
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = "#64748b";
+    ctx.font = "bold 11px 'Segoe UI', sans-serif";
+    ctx.fillText("42 : Wrist Mouse", wm.x, wm.y - 15);
+    ctx.font = "bold 12px 'Meiryo UI', sans-serif";
+    ctx.fillText(wInfo.m, wm.x, wm.y + 2);
+    ctx.font = "10px 'Meiryo UI', sans-serif";
+    ctx.fillText(wInfo.s, wm.x, wm.y + 18);
+  }
+  ctx.restore();
+
+  ctx.fillStyle = "#64748b";
+  ctx.font = "13.5px 'Meiryo UI', sans-serif";
+  ctx.fillText("左上小数字: 番号 (0～42)  |  ▽: 透過 (&trans)  |  42(Wrist Mouse): オートマウスなし・32/37長押し(Layer 3)中のみ有効", 720, 698);
+
+  ctx.restore();
+}
+
+// 全5レイヤー一覧キャンバス (2160 x 1710)
+function renderAllLayersCanvas(canvas) {
+  const w = 2160, h = 1710;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#e2e8f0";
+  ctx.fillRect(0, 0, w, h);
+
+  const slots = [
+    [16, 16],   [1088, 16],
+    [16, 580],  [1088, 580],
+    [552, 1144]
+  ];
+  for (let i = 0; i < LAYERS.length; i++) {
+    const [sx, sy] = slots[i];
+    drawCard(ctx, sx, sy, 1056, 550, 14);
+    renderLayerScene(ctx, LAYERS[i], sx + 8, sy + 6, 1040 / 1440);
+  }
+}
+
+// 一体型シート (2760 x 1570)
+function renderSummarySheetCanvas(canvas) {
+  const w = 2760, h = 1570;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#e2e8f0";
+  ctx.fillRect(0, 0, w, h);
+
+  // Left-Top: Number map
+  drawCard(ctx, 20, 20, 1100, 570, 16);
+  renderNumberMapScene(ctx, 32, 26, 1076 / 1440);
+
+  // Left-Bottom: All 5 layers
+  drawCard(ctx, 20, 606, 1100, 944, 16);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#0f172a";
+  ctx.font = "bold 19px 'Meiryo UI', sans-serif";
+  ctx.fillText("設定済みキーマップ図（全5レイヤー一覧 ／ 右XIAO＝親機・左XIAO＝子機1・Wrist Mouse＝子機2）", 570, 632);
+
+  const miniSlots = [
+    [34, 658],  [576, 658],
+    [34, 948],  [576, 948],
+    [305, 1238]
+  ];
+  for (let i = 0; i < LAYERS.length; i++) {
+    const [mx, my] = miniSlots[i];
+    roundRect(ctx, mx, my, 530, 278, 10);
+    ctx.fillStyle = "#f8fafc";
+    ctx.fill();
+    renderLayerScene(ctx, LAYERS[i], mx + 3, my + 2, 524 / 1440);
+    roundRect(ctx, mx, my, 530, 278, 10);
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+
+  // Right Card: Full Table (0..42 + Combos)
+  const rx = 1136, ryCard = 20, rw = 1604, rh = 1530;
+  drawCard(ctx, rx, ryCard, rw, rh, 16);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#0f172a";
+  ctx.font = "bold 21px 'Meiryo UI', sans-serif";
+  ctx.fillText("番号別 キー・トラックボール・Wrist Mouse 割り当て一覧表（Layer 0 ～ Layer 4）", rx + rw / 2, 48);
+
+  const tx = rx + 18;
+  const colW = [58, 168, 280, 232, 232, 300, 298];
+  const totalTW = colW.reduce((a, b) => a + b, 0);
+  const headers = [
+    "番号",
+    "左右・物理位置",
+    "Layer 0 (DEFAULT)",
+    "Layer 1 (NUM / 36長押)",
+    "Layer 2 (FN / 33長押)",
+    "Layer 3 (MOUSE / 32・37長押)",
+    "Layer 4 (SYMBOL / 39長押)"
+  ];
+
+  const ty = 74, hdrH = 36;
+  roundRect(ctx, tx, ty, totalTW, hdrH, 8);
+  ctx.fillStyle = "#1e293b";
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 13px 'Meiryo UI', sans-serif";
+  let cx = tx;
+  for (let c = 0; c < colW.length; c++) {
+    ctx.fillText(headers[c], cx + colW[c] / 2, ty + hdrH / 2);
+    cx += colW[c];
+  }
+
+  const rowH = 28.0;
+  let curY = ty + hdrH + 2;
+
+  for (let r = 0; r < 40; r++) {
+    const k = KEYS_GEO[r];
+    const isR = k.side === "R";
+    ctx.fillStyle = isR
+      ? (r % 2 === 0 ? "#f0f9ff" : "#e0f2fe")
+      : (r % 2 === 0 ? "#f8fafc" : "#f1f5f9");
+    ctx.fillRect(tx, curY, totalTW, rowH);
+
+    roundRect(ctx, tx + 9, curY + 3.5, 40, rowH - 7, 5);
+    ctx.fillStyle = "#334155";
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 13px 'Segoe UI', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(String(k.id), tx + 29, curY + rowH / 2);
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = isR ? "#0369a1" : "#334155";
+    ctx.font = "bold 13px 'Meiryo UI', sans-serif";
+    ctx.fillText(k.pos, tx + colW[0] + 10, curY + rowH / 2);
+
+    cx = tx + colW[0] + colW[1];
+    ctx.textAlign = "center";
+    for (let li = 0; li < 5; li++) {
+      const cw = colW[li + 2];
+      const cell = LAYERS[li].items[r];
+      const val = cell.t || "▽";
+      if (val.startsWith("▽")) {
+        ctx.font = "12.5px 'Meiryo UI', sans-serif";
+        ctx.fillStyle = "#94a3b8";
+      } else if (cell.sc) {
+        ctx.font = "bold 12.5px 'Meiryo UI', sans-serif";
+        ctx.fillStyle = "#0f766e";
+      } else if (cell.hl || cell.bt || val.includes("長押") || val.includes("クリック") || val.includes("戻る") || val.includes("進む")) {
+        ctx.font = "bold 12.5px 'Meiryo UI', sans-serif";
+        ctx.fillStyle = "#b45309";
+      } else {
+        ctx.font = "bold 13px 'Meiryo UI', sans-serif";
+        ctx.fillStyle = "#0f172a";
+      }
+      ctx.fillText(val, cx + cw / 2, curY + rowH / 2);
+
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx, curY);
+      ctx.lineTo(cx, curY + rowH);
+      ctx.stroke();
+      cx += cw;
+    }
+
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.beginPath();
+    ctx.moveTo(tx, curY + rowH);
+    ctx.lineTo(tx + totalTW, curY + rowH);
+    ctx.stroke();
+
+    curY += rowH;
+    if ((r + 1) % 10 === 0 && r < 39) {
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(tx, curY);
+      ctx.lineTo(tx + totalTW, curY);
+      ctx.stroke();
+      curY += 3;
+    }
+  }
+
+  // Sub-tables: Pointing Devices (40, 41, 42) & Combos
+  const by = curY + 12;
+  const tbW = 975;
+  roundRect(ctx, tx, by, tbW, 32, 7);
+  ctx.fillStyle = "#0369a1";
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.font = "bold 13.5px 'Meiryo UI', sans-serif";
+  ctx.fillText("ポインティングデバイス動作仕様（40:子機1 ／ 41:親機 ／ 42:子機2 Wrist Mouse）", tx + tbW / 2, by + 16);
+
+  const tbRows = [
+    { id: "40", col: "#0284c7", name: "左トラボ (子機1)", desc: "常時カーソル操作（自動マウスLayer 6対応） ＋ 31/38を0.3秒以上長押し中は上下左右ホイール操作" },
+    { id: "41", col: "#0284c7", name: "右トラボ (親機)",  desc: "常時カーソル操作（自動マウスLayer 6対応） ＋ 31/38を0.3秒以上長押し中は上下左右ホイール操作" },
+    { id: "42", col: "#6d28d9", name: "Wrist Mouse(子機2)", desc: "オートマウス無効・通常時は完全無反応 ／ 32または37長押し(Layer 3)中のみカーソル移動 (CPI=1600)" }
+  ];
+  let tby = by + 34;
+  for (const tr of tbRows) {
+    ctx.fillStyle = tr.id === "42" ? "#f5f3ff" : "#f0f9ff";
+    ctx.fillRect(tx, tby, tbW, 33);
+    roundRect(ctx, tx + 10, tby + 4.5, 42, 24, 12);
+    ctx.fillStyle = tr.col;
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.font = "bold 13px 'Segoe UI', sans-serif";
+    ctx.fillText(tr.id, tx + 31, tby + 16.5);
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = tr.col;
+    ctx.font = "bold 12.5px 'Meiryo UI', sans-serif";
+    ctx.fillText(tr.name, tx + 60, tby + 16.5);
+    ctx.fillStyle = "#0f172a";
+    ctx.fillText(tr.desc, tx + 205, tby + 16.5);
+    tby += 33;
+  }
+
+  ctx.fillStyle = "#475569";
+  ctx.font = "12px 'Meiryo UI', sans-serif";
+  ctx.fillText("※ 構成: 右XIAO＝親機(Central) ／ 左XIAO＝子機1(split ID=0) ／ Wrist Mouse＝子機2(split ID=1)。すべて同一ZMKファームから一括ビルドされます。", tx + 4, tby + 16);
+  ctx.fillText("※ トラボ操作のオートマウスは内部専用 Layer 6 に入るため、トラボに触れても Wrist Mouse(42) は誤反応せず、32/37長押し時のみ動きます。", tx + 4, tby + 38);
+
+  // Combos sub-table
+  const cxStart = tx + tbW + 20;
+  const cbW = totalTW - tbW - 20;
+  roundRect(ctx, cxStart, by, cbW, 32, 7);
+  ctx.fillStyle = "#0f766e";
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.font = "bold 13.5px 'Meiryo UI', sans-serif";
+  ctx.fillText("同時押しコンボ（判定 50ms）", cxStart + cbW / 2, by + 16);
+
+  let cby = by + 34;
+  for (const cr of COMBOS) {
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillRect(cxStart, cby, cbW, 33);
+    roundRect(ctx, cxStart + 10, cby + 4.5, 84, 24, 6);
+    ctx.fillStyle = "#0d9488";
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.font = "bold 13px 'Segoe UI', sans-serif";
+    ctx.fillText(cr.pair, cxStart + 52, cby + 16.5);
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#64748b";
+    ctx.font = "13px 'Meiryo UI', sans-serif";
+    ctx.fillText(`(${cr.keys})`, cxStart + 104, cby + 16.5);
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 13px 'Meiryo UI', sans-serif";
+    ctx.fillText(`→  ${cr.out}`, cxStart + 190, cby + 16.5);
+    cby += 33;
+  }
+}
+
+// ============================================================================
+// 4. UI 切替 & PNG 出力処理
+// ============================================================================
+let currentMode = "summary";
+const mainCanvas = document.getElementById("mainCanvas");
+const viewInfo = document.getElementById("viewInfo");
+
+function renderModeToCanvas(mode, targetCanvas) {
+  if (mode === "summary") {
+    renderSummarySheetCanvas(targetCanvas);
+  } else if (mode === "nummap") {
+    targetCanvas.width = 1440;
+    targetCanvas.height = 760;
+    renderNumberMapScene(targetCanvas.getContext("2d"), 0, 0, 1);
+  } else if (mode === "alllayers") {
+    renderAllLayersCanvas(targetCanvas);
+  } else if (mode.startsWith("layer")) {
+    const idx = parseInt(mode.replace("layer", ""), 10);
+    targetCanvas.width = 1440;
+    targetCanvas.height = 760;
+    renderLayerScene(targetCanvas.getContext("2d"), LAYERS[idx], 0, 0, 1);
+  }
+}
+
+function setMode(mode, labelText) {
+  currentMode = mode;
+  renderModeToCanvas(mode, mainCanvas);
+  viewInfo.textContent = `表示モード: ${labelText} （解像度: ${mainCanvas.width} × ${mainCanvas.height} px）`;
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.mode === mode);
+  });
+}
+
+document.getElementById("tabsBar").addEventListener("click", e => {
+  const btn = e.target.closest(".tab-btn");
+  if (!btn) return;
+  setMode(btn.dataset.mode, btn.textContent.trim());
+});
+
+function triggerCanvasDownload(canvas, filename) {
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, "image/png");
+}
+
+function downloadCurrentViewPng() {
+  const filenameMap = {
+    summary:   "kobitokey_map_with_table.png",
+    nummap:    "kobitokey_button_map.png",
+    alllayers: "kobitokey_all_layers.png",
+    layer0:    "kobitokey_layer0_default.png",
+    layer1:    "kobitokey_layer1_number.png",
+    layer2:    "kobitokey_layer2_function.png",
+    layer3:    "kobitokey_layer3_mouse.png",
+    layer4:    "kobitokey_layer4_symbol.png"
+  };
+  triggerCanvasDownload(mainCanvas, filenameMap[currentMode] || "kobitokey_keymap.png");
+}
+
+function downloadModePng(mode, filename) {
+  const off = document.createElement("canvas");
+  renderModeToCanvas(mode, off);
+  triggerCanvasDownload(off, filename);
+}
+
+// 初期描画
+setMode("summary", "📊 一体型シート（番号マップ ＋ 全レイヤー ＋ 対応表）");
+</script>
+</body>
+</html>

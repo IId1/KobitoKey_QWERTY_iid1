@@ -1,0 +1,16 @@
+if SHIELD_WRIST_MOUSE
+
+config ZMK_KEYBOARD_NAME
+    default "Wrist Mouse"
+
+config ZMK_SPLIT
+    default y
+
+config ZMK_POINTING
+    default y
+
+config SPI
+    default y
+
+endif
+

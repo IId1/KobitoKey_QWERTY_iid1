@@ -1,7 +1,9 @@
-# 左（central）
-if SHIELD_KOBITOKEY_LEFT
+# 右（central / 親機）
+if SHIELD_KOBITOKEY_RIGHT
 config ZMK_KEYBOARD_NAME
     default "KobitoKey"
+config ZMK_SPLIT_ROLE_CENTRAL
+    default y
 endif
 
 # 左右共通
