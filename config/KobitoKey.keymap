@@ -4,9 +4,23 @@
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/pointing.h>
 
+/*
+ * レイヤー構成（同時押しトグルの「Layer 0 限定」判定および LED 色優先度を正しく機能させるため、
+ * トグル状態保持用の全透過レイヤー TB_OFF / WM_ON を Layer 0 の直上に配置しています）:
+ *   0: DEFAULT    (基本レイヤー)
+ *   1: TB_OFF     (トラックボール自動検知OFFフラグ用・全透過 / 11+12+13 または 15+16+17 でトグル)
+ *   2: WM_ON      (Wrist Mouse 常時カーソルONフラグ用・全透過 / 21+22+23 または 25+26+27 でトグル)
+ *   3: NUMBER     (36 長押し)
+ *   4: FUNCTION   (33 長押し)
+ *   5: MOUSE      (32 または 37 長押し — トグル状態に関わらずトラボ＋Wrist Mouse 両方有効)
+ *   6: SYMBOL     (39 長押し)
+ *   7: SCROLL     (MOUSE / AUTO_MOUSE 中に 31 または 38 を 0.3秒以上長押し — 縦横ホイール)
+ *   8: AUTO_MOUSE (左右トラックボール移動時の自動マウスレイヤー)
+ */
+
 / {
     behaviors {
-        /* 0.3秒(300ms)以上の長押しで上下左右ホイール操作レイヤー(Layer 5)を有効化、短押しは無効(0) */
+        /* 0.3秒(300ms)以上の長押しで上下左右ホイール操作レイヤー(Layer 7)を有効化、短押しは無効(0) */
         lt_scroll: layer_tap_scroll {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
@@ -14,36 +28,10 @@
             tapping-term-ms = <300>;
             bindings = <&mo>, <&kp>;
         };
-
-        /* 指定レイヤーを明示的にOFFにするビヘイビア */
-        tog_off: toggle_layer_off {
-            compatible = "zmk,behavior-toggle-layer";
-            #binding-cells = <1>;
-            toggle-mode = "off";
-        };
-
-        /* オートマウスレイヤーの ON/OFF トグル（現在発動中の Layer 6 も即座に解除） */
-        aml_toggle: aml_toggle {
-            compatible = "zmk,behavior-macro";
-            #binding-cells = <0>;
-            bindings = <&macro_tap &tog 7 &tog_off 6>;
-        };
     };
 
     combos {
         compatible = "zmk,combos";
-
-        combo_eisu {
-            timeout-ms = <50>;
-            key-positions = <12 13>;
-            bindings = <&kp LANG2>;
-        };
-
-        combo_kana {
-            timeout-ms = <50>;
-            key-positions = <16 17>;
-            bindings = <&kp LANG1>;
-        };
 
         combo_esc {
             timeout-ms = <50>;
@@ -57,46 +45,80 @@
             bindings = <&kp TAB>;
         };
 
-        /* 11+12+13 (S+D+F) または 15+16+17 (H+J+K) 同時押し: オートマウスレイヤー ON/OFF トグル */
-        combo_aml_toggle_l {
+        /*
+         * Layer 0 限定（透過フラグ Layer 1 / 2 のみが重なっている状態を含む）:
+         * 11+12+13 (S+D+F) または 15+16+17 (H+J+K) 同時押しで左右トラックボールのポインティング動作を ON/OFF トグル
+         */
+        combo_tb_toggle_l {
             timeout-ms = <60>;
             key-positions = <11 12 13>;
-            bindings = <&aml_toggle>;
+            layers = <0 1 2>;
+            bindings = <&tog 1>;
         };
 
-        combo_aml_toggle_r {
+        combo_tb_toggle_r {
             timeout-ms = <60>;
             key-positions = <15 16 17>;
-            bindings = <&aml_toggle>;
+            layers = <0 1 2>;
+            bindings = <&tog 1>;
         };
 
-        /* 21+22+23 (X+C+V) または 25+26+27 (N+M+,) 同時押し: Wrist Mouse カーソル移動 ON/OFF トグル */
+        /*
+         * Layer 0 限定（透過フラグ Layer 1 / 2 のみが重なっている状態を含む）:
+         * 21+22+23 (X+C+V) または 25+26+27 (N+M+,) 同時押しで Wrist Mouse 常時カーソル移動を ON/OFF トグル
+         */
         combo_wm_toggle_l {
             timeout-ms = <60>;
             key-positions = <21 22 23>;
-            bindings = <&tog 8>;
+            layers = <0 1 2>;
+            bindings = <&tog 2>;
         };
 
         combo_wm_toggle_r {
             timeout-ms = <60>;
             key-positions = <25 26 27>;
-            bindings = <&tog 8>;
+            layers = <0 1 2>;
+            bindings = <&tog 2>;
         };
     };
 
     keymap {
         compatible = "zmk,keymap";
 
+        /* Layer 0: DEFAULT */
         default_layer {
             bindings = <
 &kp Q      &kp W     &kp E        &kp R        &kp T      &kp Y     &kp U        &kp I        &kp O      &kp P
 &kp A      &kp S     &kp D        &kp F        &kp G      &kp H     &kp J        &kp K        &kp L      &kp SEMI
 &kp Z      &kp X     &kp C        &kp V        &kp B      &kp N     &kp M        &kp COMMA    &kp DOT    &kp APOS
-&kp LSHFT  &kp LGUI  &lt 3 LANG2  &lt 2 SPACE  &kp LCTRL  &kp BSPC  &lt 1 ENTER  &lt 3 LANG1  &kp MINUS  &lt 4 SLASH
+&kp LSHFT  &kp LGUI  &lt 5 LANG2  &lt 4 SPACE  &kp LCTRL  &kp BSPC  &lt 3 ENTER  &lt 5 LANG1  &kp MINUS  &lt 6 SLASH
             >;
         };
 
+        /* Layer 1: トラックボール自動検知無効化フラグ用透過レイヤー (11+12+13 / 15+16+17 でトグル) */
         layer1 {
+            label = "TB_OFF";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+            >;
+        };
+
+        /* Layer 2: Wrist Mouse 常時カーソル有効化フラグ用透過レイヤー (21+22+23 / 25+26+27 でトグル) */
+        layer2 {
+            label = "WM_ON";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+            >;
+        };
+
+        /* Layer 3: NUMBER (36長押し) */
+        layer3 {
             label = "NUMBER";
             bindings = <
 &kp N0     &kp N1  &kp N2  &kp N3     &trans  &kp MINUS  &trans     &kp UP    &trans     &trans
@@ -106,7 +128,8 @@
             >;
         };
 
-        layer2 {
+        /* Layer 4: FUNCTION (33長押し) */
+        layer4 {
             label = "FUNCTION";
             bindings = <
 &trans   &kp F1   &kp F2   &kp F3  &trans    &bt BT_SEL 0    &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4
@@ -116,18 +139,19 @@
             >;
         };
 
-        /* 32または37の長押し時: wrist_mouse（トグル状態に関わらず有効）＋ 左右トラボのすべてが有効 */
-        layer3 {
+        /* Layer 5: MOUSE (32または37長押し: トグル状態に関わらず wrist_mouse ＋ 左右トラボのすべてが有効) */
+        layer5 {
             label = "MOUSE";
             bindings = <
 &trans     &mkp MB4         &trans    &mkp MB5  &trans  &trans  &mkp MB4  &trans    &mkp MB5         &trans
 &trans     &mkp MB2         &mkp MB3  &mkp MB1  &trans  &trans  &mkp MB1  &mkp MB3  &mkp MB2         &trans
 &kp LCTRL  &trans           &trans    &trans    &trans  &trans  &trans    &trans    &trans           &kp RCTRL
-&kp LSHFT  &lt_scroll 5 0   &trans    &trans    &trans  &trans  &trans    &trans    &lt_scroll 5 0   &kp RSHFT
+&kp LSHFT  &lt_scroll 7 0   &trans    &trans    &trans  &trans  &trans    &trans    &lt_scroll 7 0   &kp RSHFT
             >;
         };
 
-        layer4 {
+        /* Layer 6: SYMBOL (39長押し) */
+        layer6 {
             label = "SYMBOL";
             bindings = <
 &kp EXCL   &kp AT     &kp HASH   &kp DLLR  &kp PRCNT  &trans  &trans  &trans  &trans  &trans
@@ -137,7 +161,8 @@
             >;
         };
 
-        layer5 {
+        /* Layer 7: SCROLL (31または38を0.3秒以上長押し) */
+        layer7 {
             label = "SCROLL";
             bindings = <
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
@@ -147,36 +172,14 @@
             >;
         };
 
-        /* 左右トラックボール操作時のオートマウス専用レイヤー */
-        layer6 {
+        /* Layer 8: AUTO_MOUSE (左右トラックボール操作時のオートマウス専用レイヤー) */
+        layer8 {
             label = "AUTO_MOUSE";
             bindings = <
 &trans     &mkp MB4         &trans    &mkp MB5  &trans  &trans  &mkp MB4  &trans    &mkp MB5         &trans
 &trans     &mkp MB2         &mkp MB3  &mkp MB1  &trans  &trans  &mkp MB1  &mkp MB3  &mkp MB2         &trans
 &kp LCTRL  &trans           &trans    &trans    &trans  &trans  &trans    &trans    &trans           &kp RCTRL
-&kp LSHFT  &lt_scroll 5 0   &trans    &trans    &trans  &trans  &trans    &trans    &lt_scroll 5 0   &kp RSHFT
-            >;
-        };
-
-        /* Layer 7: オートマウス無効化フラグ用透過レイヤー (11+12+13 / 15+16+17 でトグル) */
-        layer7 {
-            label = "AML_OFF";
-            bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-            >;
-        };
-
-        /* Layer 8: Wrist Mouse 常時カーソル有効化フラグ用透過レイヤー (21+22+23 / 25+26+27 でトグル) */
-        layer8 {
-            label = "WM_ON";
-            bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&kp LSHFT  &lt_scroll 7 0   &trans    &trans    &trans  &trans  &trans    &trans    &lt_scroll 7 0   &kp RSHFT
             >;
         };
     };
