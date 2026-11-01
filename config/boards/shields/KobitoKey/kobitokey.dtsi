@@ -46,6 +46,7 @@
 
         wrist_mouse_split: wrist_mouse_split@1 {
             compatible = "zmk,input-split";
+            status = "disabled";
             reg = <1>;
         };
     };

@@ -126,6 +126,11 @@
     };
 };
 
+/* wrist_mouse（子機2 ID=1）: 親機側で split 受信を有効化 */
+&wrist_mouse_split {
+    status = "okay";
+};
+
 /* wrist_mouse（子機2 ID=1）: オートマウス無効、32または37長押し(Layer 3)中のみ反応 */
 &wrist_mouse_listener {
     status = "okay";
