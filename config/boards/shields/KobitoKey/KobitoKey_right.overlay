@@ -85,20 +85,32 @@
 &tb_left_listener {
     status = "okay";
 
-    /* 通常時はカーソル操作 ＋ トラボ用オートマウス(Layer 6) */
+    /* 通常時（トラボ自動検知ON）: カーソル操作 ＋ トラボ用オートマウス(Layer 6) */
     input-processors =
         <&sensor_rotation_left>,
         <&zip_temp_layer 6 5000>;
 
-    /* Layer 5 (31または38を0.3秒以上長押し中) は上下左右ホイールスクロール */
+    /* 優先度1: Layer 5 (31または38を0.3秒以上長押し中) は上下左右ホイールスクロール */
     scroll_layer {
         layers = <5>;
         input-processors =
             <&sensor_rotation_left>,
             <&zip_xy_scaler 1 45>,
             <&zip_xy_to_scroll_mapper>,
-            <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>,
-            <&zip_temp_layer 6 5000>;
+            <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>;
+    };
+
+    /* 優先度2: Layer 3 (32/37長押しによる手動マウスレイヤー中) はトラボ無効化中でもカーソル移動有効 */
+    manual_mouse_layer {
+        layers = <3>;
+        input-processors =
+            <&sensor_rotation_left>;
+    };
+
+    /* 優先度3: Layer 7 (11+12+13 / 15+16+17 トグルでトラボ無効化中) はカーソル移動もオートマウスも完全無効化 */
+    tb_off_layer {
+        layers = <7>;
+        input-processors = <&zip_drop_xy>;
     };
 };
 
@@ -107,13 +119,13 @@
     status = "okay";
     device = <&tb_right>;
 
-    /* 通常時はカーソル操作 ＋ トラボ用オートマウス(Layer 6) */
+    /* 通常時（トラボ自動検知ON）: カーソル操作 ＋ トラボ用オートマウス(Layer 6) */
     input-processors =
         <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
         <&sensor_rotation_right>,
         <&zip_temp_layer 6 5000>;
 
-    /* Layer 5 (31または38を0.3秒以上長押し中) は上下左右ホイールスクロール */
+    /* 優先度1: Layer 5 (31または38を0.3秒以上長押し中) は上下左右ホイールスクロール */
     scroll_layer {
         layers = <5>;
         input-processors =
@@ -121,8 +133,21 @@
             <&sensor_rotation_right>,
             <&zip_xy_scaler 1 45>,
             <&zip_xy_to_scroll_mapper>,
-            <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>,
-            <&zip_temp_layer 6 5000>;
+            <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>;
+    };
+
+    /* 優先度2: Layer 3 (32/37長押しによる手動マウスレイヤー中) はトラボ無効化中でもカーソル移動有効 */
+    manual_mouse_layer {
+        layers = <3>;
+        input-processors =
+            <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
+            <&sensor_rotation_right>;
+    };
+
+    /* 優先度3: Layer 7 (11+12+13 / 15+16+17 トグルでトラボ無効化中) はカーソル移動もオートマウスも完全無効化 */
+    tb_off_layer {
+        layers = <7>;
+        input-processors = <&zip_drop_xy>;
     };
 };
 
@@ -131,16 +156,19 @@
     status = "okay";
 };
 
-/* wrist_mouse（子機2 ID=1）: オートマウス無効、32または37長押し(Layer 3)中のみ反応 */
+/* wrist_mouse（子機2 ID=1）:
+ * - トグルOFF時: 通常は無反応、Layer 3 (32/37長押し) 中のみカーソル移動
+ * - トグルON時 (Layer 8: 21+22+23 / 25+26+27): 常時カーソル移動（Layer 3中ももちろん有効）
+ */
 &wrist_mouse_listener {
     status = "okay";
 
-    /* 通常レイヤー(およびトラボ用オートマウスLayer 6 / スクロールLayer 5単体)では完全無効化 */
+    /* 通常レイヤー(Layer 8 OFF かつ Layer 3 OFF)では完全無効化 */
     input-processors = <&zip_drop_xy>;
 
-    /* 32または37の長押し中(Layer 3)のみカーソル移動として反応 */
+    /* Layer 3 (32/37長押しマウスレイヤー) または Layer 8 (常時ONトグル) のいずれかが有効ならカーソル移動 */
     cursor_layer {
-        layers = <3>;
+        layers = <3 8>;
         input-processors = <&zip_xy_scaler 1 1>;
     };
 };

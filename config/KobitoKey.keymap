@@ -14,6 +14,20 @@
             tapping-term-ms = <300>;
             bindings = <&mo>, <&kp>;
         };
+
+        /* 指定レイヤーを明示的にOFFにするビヘイビア */
+        tog_off: toggle_layer_off {
+            compatible = "zmk,behavior-toggle-layer";
+            #binding-cells = <1>;
+            toggle-mode = "off";
+        };
+
+        /* オートマウスレイヤーの ON/OFF トグル（現在発動中の Layer 6 も即座に解除） */
+        aml_toggle: aml_toggle {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&macro_tap &tog 7 &tog_off 6>;
+        };
     };
 
     combos {
@@ -41,6 +55,32 @@
             timeout-ms = <50>;
             key-positions = <10 11>;
             bindings = <&kp TAB>;
+        };
+
+        /* 11+12+13 (S+D+F) または 15+16+17 (H+J+K) 同時押し: オートマウスレイヤー ON/OFF トグル */
+        combo_aml_toggle_l {
+            timeout-ms = <60>;
+            key-positions = <11 12 13>;
+            bindings = <&aml_toggle>;
+        };
+
+        combo_aml_toggle_r {
+            timeout-ms = <60>;
+            key-positions = <15 16 17>;
+            bindings = <&aml_toggle>;
+        };
+
+        /* 21+22+23 (X+C+V) または 25+26+27 (N+M+,) 同時押し: Wrist Mouse カーソル移動 ON/OFF トグル */
+        combo_wm_toggle_l {
+            timeout-ms = <60>;
+            key-positions = <21 22 23>;
+            bindings = <&tog 8>;
+        };
+
+        combo_wm_toggle_r {
+            timeout-ms = <60>;
+            key-positions = <25 26 27>;
+            bindings = <&tog 8>;
         };
     };
 
@@ -76,14 +116,14 @@
             >;
         };
 
-        /* 32または37の長押し時: wrist_mouse ＋ 左右トラボのすべてが有効 */
+        /* 32または37の長押し時: wrist_mouse（トグル状態に関わらず有効）＋ 左右トラボのすべてが有効 */
         layer3 {
             label = "MOUSE";
             bindings = <
 &trans     &mkp MB4         &trans    &mkp MB5  &trans  &trans  &mkp MB4  &trans    &mkp MB5         &trans
 &trans     &mkp MB2         &mkp MB3  &mkp MB1  &trans  &trans  &mkp MB1  &mkp MB3  &mkp MB2         &trans
-&kp LSHFT  &trans           &trans    &trans    &trans  &trans  &trans    &trans    &trans           &kp RSHFT
-&kp LCTRL  &lt_scroll 5 0   &trans    &trans    &trans  &trans  &trans    &trans    &lt_scroll 5 0   &kp RCTRL
+&kp LCTRL  &trans           &trans    &trans    &trans  &trans  &trans    &trans    &trans           &kp RCTRL
+&kp LSHFT  &lt_scroll 5 0   &trans    &trans    &trans  &trans  &trans    &trans    &lt_scroll 5 0   &kp RSHFT
             >;
         };
 
@@ -107,14 +147,36 @@
             >;
         };
 
-        /* 左右トラックボール操作時のオートマウス専用レイヤー（wrist_mouseは反応しない） */
+        /* 左右トラックボール操作時のオートマウス専用レイヤー */
         layer6 {
             label = "AUTO_MOUSE";
             bindings = <
 &trans     &mkp MB4         &trans    &mkp MB5  &trans  &trans  &mkp MB4  &trans    &mkp MB5         &trans
 &trans     &mkp MB2         &mkp MB3  &mkp MB1  &trans  &trans  &mkp MB1  &mkp MB3  &mkp MB2         &trans
-&kp LSHFT  &trans           &trans    &trans    &trans  &trans  &trans    &trans    &trans           &kp RSHFT
-&kp LCTRL  &lt_scroll 5 0   &trans    &trans    &trans  &trans  &trans    &trans    &lt_scroll 5 0   &kp RCTRL
+&kp LCTRL  &trans           &trans    &trans    &trans  &trans  &trans    &trans    &trans           &kp RCTRL
+&kp LSHFT  &lt_scroll 5 0   &trans    &trans    &trans  &trans  &trans    &trans    &lt_scroll 5 0   &kp RSHFT
+            >;
+        };
+
+        /* Layer 7: オートマウス無効化フラグ用透過レイヤー (11+12+13 / 15+16+17 でトグル) */
+        layer7 {
+            label = "AML_OFF";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+            >;
+        };
+
+        /* Layer 8: Wrist Mouse 常時カーソル有効化フラグ用透過レイヤー (21+22+23 / 25+26+27 でトグル) */
+        layer8 {
+            label = "WM_ON";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
             >;
         };
     };

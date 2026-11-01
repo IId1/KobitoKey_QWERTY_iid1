@@ -256,6 +256,15 @@ const COMBOS = [
   { a: 16, b: 17, pair: "16 + 17", keys: "J + K", out: "かな (LANG1)", badge: "かな" }
 ];
 
+const COMBO_TABLE_ROWS = [
+  { pair: "0 + 1",               keys: "Q + W",       out: "ESC",                      col: "#0d9488" },
+  { pair: "10 + 11",             keys: "A + S",       out: "TAB",                      col: "#0d9488" },
+  { pair: "12 + 13",             keys: "D + F",       out: "英数 (LANG2)",             col: "#0d9488" },
+  { pair: "16 + 17",             keys: "J + K",       out: "かな (LANG1)",             col: "#0d9488" },
+  { pair: "11+12+13 / 15+16+17", keys: "SDF / HJK",   out: "トラボ自動検知 ON/OFF切替", col: "#0284c7" },
+  { pair: "21+22+23 / 25+26+27", keys: "XCV / NM,",   out: "WristMouse 常時ON/OFF",    col: "#6d28d9" }
+];
+
 // ============================================================================
 // 2. 各レイヤー割り当てデータ
 // ============================================================================
@@ -365,18 +374,18 @@ const LAYERS = [
       { m: "右Click", s: "MB2", hl: true, t: "右クリック (MB2) ★" },
       { m: "", t: "▽" },
 
-      { m: "LShift", t: "LShift ★" },
-      { m: "", t: "▽" },
-      { m: "", t: "▽" },
-      { m: "", t: "▽" },
-      { m: "", t: "▽" },
-      { m: "", t: "▽" },
-      { m: "", t: "▽" },
-      { m: "", t: "▽" },
-      { m: "", t: "▽" },
-      { m: "RShift", t: "RShift ★" },
-
       { m: "LCtrl", t: "LCtrl ★" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "", t: "▽" },
+      { m: "RCtrl", t: "RCtrl ★" },
+
+      { m: "LShift", t: "LShift ★" },
       { m: "Wheel", s: "0.3s長押", sc: true, t: "0.3秒押:縦横Wheel ★" },
       { m: "(Hold中)", trig: true, t: "(32長押で保持)" },
       { m: "", t: "▽" },
@@ -385,7 +394,7 @@ const LAYERS = [
       { m: "", t: "▽" },
       { m: "(Hold中)", trig: true, t: "(37長押で保持)" },
       { m: "Wheel", s: "0.3s長押", sc: true, t: "0.3秒押:縦横Wheel ★" },
-      { m: "RCtrl", t: "RCtrl ★" }
+      { m: "RShift", t: "RShift ★" }
     ]
   },
   {
@@ -989,9 +998,9 @@ function renderSummarySheetCanvas(canvas) {
   ctx.fillText("ポインティングデバイス動作仕様（40:子機1 ／ 41:親機 ／ 42:子機2 Wrist Mouse）", tx + tbW / 2, by + 16);
 
   const tbRows = [
-    { id: "40", col: "#0284c7", name: "左トラボ (子機1)", desc: "常時カーソル操作（自動マウスLayer 6対応） ＋ 31/38を0.3秒以上長押し中は上下左右ホイール操作" },
-    { id: "41", col: "#0284c7", name: "右トラボ (親機)",  desc: "常時カーソル操作（自動マウスLayer 6対応） ＋ 31/38を0.3秒以上長押し中は上下左右ホイール操作" },
-    { id: "42", col: "#6d28d9", name: "Wrist Mouse(子機2)", desc: "オートマウス無効・通常時は完全無反応 ／ 32または37長押し(Layer 3)中のみカーソル移動 (CPI=1600)" }
+    { id: "40", col: "#0284c7", name: "左トラボ (子機1)", desc: "11+12+13 / 15+16+17 で自動検知(カーソル+自動マウス)ON/OFF切替 ／ 無効時も32/37長押中は反応" },
+    { id: "41", col: "#0284c7", name: "右トラボ (親機)",  desc: "11+12+13 / 15+16+17 で自動検知(カーソル+自動マウス)ON/OFF切替 ／ 無効時も32/37長押中は反応" },
+    { id: "42", col: "#6d28d9", name: "Wrist Mouse(子機2)", desc: "21+22+23 / 25+26+27 で常時カーソル移動ON/OFF切替 ／ トグル状態に関わらず32/37長押中は必ず反応" }
   ];
   let tby = by + 34;
   for (const tr of tbRows) {
@@ -1010,14 +1019,14 @@ function renderSummarySheetCanvas(canvas) {
     ctx.font = "bold 12.5px 'Meiryo UI', sans-serif";
     ctx.fillText(tr.name, tx + 60, tby + 16.5);
     ctx.fillStyle = "#0f172a";
-    ctx.fillText(tr.desc, tx + 205, tby + 16.5);
+    ctx.fillText(tr.desc, tx + 200, tby + 16.5);
     tby += 33;
   }
 
   ctx.fillStyle = "#475569";
   ctx.font = "12px 'Meiryo UI', sans-serif";
-  ctx.fillText("※ 構成: 右XIAO＝親機(Central) ／ 左XIAO＝子機1(split ID=0) ／ Wrist Mouse＝子機2(split ID=1)。すべて同一ZMKファームから一括ビルドされます。", tx + 4, tby + 16);
-  ctx.fillText("※ トラボ操作のオートマウスは内部専用 Layer 6 に入るため、トラボに触れても Wrist Mouse(42) は誤反応せず、32/37長押し時のみ動きます。", tx + 4, tby + 38);
+  ctx.fillText("※ 構成: 右XIAO＝親機(Central) ／ 左XIAO＝子機1(split ID=0) ／ Wrist Mouse＝子機2(split ID=1)。BLE低遅延(LATENCY=0)・+8dBm設定済。", tx + 4, tby + 16);
+  ctx.fillText("※ トラボ自動マウス(11+12+13 / 15+16+17)と Wrist Mouse常時移動(21+22+23 / 25+26+27)はそれぞれ独立してトグル切替できます。", tx + 4, tby + 38);
 
   // Combos sub-table
   const cxStart = tx + tbW + 20;
@@ -1028,28 +1037,28 @@ function renderSummarySheetCanvas(canvas) {
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
   ctx.font = "bold 13.5px 'Meiryo UI', sans-serif";
-  ctx.fillText("同時押しコンボ（判定 50ms）", cxStart + cbW / 2, by + 16);
+  ctx.fillText("同時押しコンボ（2キー: 50ms ／ 3キー: 60ms）", cxStart + cbW / 2, by + 16);
 
   let cby = by + 34;
-  for (const cr of COMBOS) {
+  for (const cr of COMBO_TABLE_ROWS) {
     ctx.fillStyle = "#f8fafc";
-    ctx.fillRect(cxStart, cby, cbW, 33);
-    roundRect(ctx, cxStart + 10, cby + 4.5, 84, 24, 6);
-    ctx.fillStyle = "#0d9488";
+    ctx.fillRect(cxStart, cby, cbW, 27);
+    roundRect(ctx, cxStart + 8, cby + 3, 152, 21, 5);
+    ctx.fillStyle = cr.col;
     ctx.fill();
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
-    ctx.font = "bold 13px 'Segoe UI', sans-serif";
-    ctx.fillText(cr.pair, cxStart + 52, cby + 16.5);
+    ctx.font = "bold 11.5px 'Segoe UI', sans-serif";
+    ctx.fillText(cr.pair, cxStart + 84, cby + 13.5);
 
     ctx.textAlign = "left";
     ctx.fillStyle = "#64748b";
-    ctx.font = "13px 'Meiryo UI', sans-serif";
-    ctx.fillText(`(${cr.keys})`, cxStart + 104, cby + 16.5);
+    ctx.font = "11.5px 'Meiryo UI', sans-serif";
+    ctx.fillText(`(${cr.keys})`, cxStart + 168, cby + 13.5);
     ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 13px 'Meiryo UI', sans-serif";
-    ctx.fillText(`→  ${cr.out}`, cxStart + 190, cby + 16.5);
-    cby += 33;
+    ctx.font = "bold 12px 'Meiryo UI', sans-serif";
+    ctx.fillText(`→ ${cr.out}`, cxStart + 258, cby + 13.5);
+    cby += 27;
   }
 }
 
