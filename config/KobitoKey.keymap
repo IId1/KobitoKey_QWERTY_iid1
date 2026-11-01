@@ -5,16 +5,15 @@
 #include <dt-bindings/zmk/pointing.h>
 
 /*
- * レイヤー構成（同時押しトグルの「Layer 0 限定」判定および LED 色優先度を正しく機能させるため、
- * トグル状態保持用の全透過レイヤー TB_OFF / WM_ON を Layer 0 の直上に配置しています）:
+ * レイヤー構成:
  *   0: DEFAULT    (基本レイヤー)
- *   1: TB_OFF     (トラックボール自動検知OFFフラグ用・全透過 / 11+12+13 または 15+16+17 でトグル)
- *   2: WM_ON      (Wrist Mouse 常時カーソルONフラグ用・全透過 / 21+22+23 または 25+26+27 でトグル)
+ *   1: TB_OFF     (トラックボール自動検知OFFフラグ用・全透過 / 12+13 または 16+17 でトグル)
+ *   2: WM_ON      (Wrist Mouse 常時カーソルONフラグ用・全透過 / 22+23 または 26+27 でトグル)
  *   3: NUMBER     (36 長押し)
  *   4: FUNCTION   (33 長押し)
  *   5: MOUSE      (32 または 37 長押し — トグル状態に関わらずトラボ＋Wrist Mouse 両方有効)
  *   6: SYMBOL     (39 長押し)
- *   7: SCROLL     (MOUSE / AUTO_MOUSE 中に 31 または 38 を 0.3秒以上長押し — 縦横ホイール)
+ *   7: SCROLL     (MOUSE / AUTO_MOUSE 中に 31 または 38 を 0.3秒以上長押し — トラボ・Wrist Mouse 両方縦横ホイール)
  *   8: AUTO_MOUSE (左右トラックボール移動時の自動マウスレイヤー)
  */
 
@@ -27,6 +26,22 @@
             flavor = "tap-preferred";
             tapping-term-ms = <300>;
             bindings = <&mo>, <&kp>;
+        };
+
+        /* 指定レイヤーを明示的にOFFにするビヘイビア */
+        tog_off: toggle_layer_off {
+            compatible = "zmk,behavior-toggle-layer";
+            #binding-cells = <1>;
+            toggle-mode = "off";
+        };
+
+        /* トラックボール動作（オートマウス＋カーソル移動）の ON/OFF トグル（発動中の AUTO_MOUSE も即座に解除） */
+        tb_toggle: tb_toggle {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            wait-ms = <0>;
+            tap-ms = <0>;
+            bindings = <&macro_tap &tog 1 &tog_off 8>;
         };
     };
 
@@ -46,38 +61,40 @@
         };
 
         /*
-         * Layer 0 限定（透過フラグ Layer 1 / 2 のみが重なっている状態を含む）:
-         * 11+12+13 (S+D+F) または 15+16+17 (H+J+K) 同時押しで左右トラックボールのポインティング動作を ON/OFF トグル
+         * 12+13 (D+F) または 16+17 (J+K) 同時押し:
+         * 左右トラックボールのポインティング動作（オートマウス＋カーソル移動）ON/OFF トグル
+         * ※ トラボに触れた直後（AUTO_MOUSE Layer 8 滞留中 5秒間）でも確実に切り替えられるよう 8 も対象に含め、
+         *   NUMBER(3) / FUNCTION(4) / 手動MOUSE(5) / SYMBOL(6) / SCROLL(7) では誤爆しないように制限
          */
         combo_tb_toggle_l {
-            timeout-ms = <60>;
-            key-positions = <11 12 13>;
-            layers = <0 1 2>;
-            bindings = <&tog 1>;
+            timeout-ms = <50>;
+            key-positions = <12 13>;
+            layers = <0 1 2 8>;
+            bindings = <&tb_toggle>;
         };
 
         combo_tb_toggle_r {
-            timeout-ms = <60>;
-            key-positions = <15 16 17>;
-            layers = <0 1 2>;
-            bindings = <&tog 1>;
+            timeout-ms = <50>;
+            key-positions = <16 17>;
+            layers = <0 1 2 8>;
+            bindings = <&tb_toggle>;
         };
 
         /*
-         * Layer 0 限定（透過フラグ Layer 1 / 2 のみが重なっている状態を含む）:
-         * 21+22+23 (X+C+V) または 25+26+27 (N+M+,) 同時押しで Wrist Mouse 常時カーソル移動を ON/OFF トグル
+         * 22+23 (C+V) または 26+27 (M+,) 同時押し:
+         * Wrist Mouse 常時カーソル移動 ON/OFF トグル（どちらの状態でも 32/37 長押し時は反応）
          */
         combo_wm_toggle_l {
-            timeout-ms = <60>;
-            key-positions = <21 22 23>;
-            layers = <0 1 2>;
+            timeout-ms = <50>;
+            key-positions = <22 23>;
+            layers = <0 1 2 8>;
             bindings = <&tog 2>;
         };
 
         combo_wm_toggle_r {
-            timeout-ms = <60>;
-            key-positions = <25 26 27>;
-            layers = <0 1 2>;
+            timeout-ms = <50>;
+            key-positions = <26 27>;
+            layers = <0 1 2 8>;
             bindings = <&tog 2>;
         };
     };
@@ -95,7 +112,7 @@
             >;
         };
 
-        /* Layer 1: トラックボール自動検知無効化フラグ用透過レイヤー (11+12+13 / 15+16+17 でトグル) */
+        /* Layer 1: トラックボール自動検知無効化フラグ用透過レイヤー (12+13 / 16+17 でトグル) */
         layer1 {
             label = "TB_OFF";
             bindings = <
@@ -106,7 +123,7 @@
             >;
         };
 
-        /* Layer 2: Wrist Mouse 常時カーソル有効化フラグ用透過レイヤー (21+22+23 / 25+26+27 でトグル) */
+        /* Layer 2: Wrist Mouse 常時カーソル有効化フラグ用透過レイヤー (22+23 / 26+27 でトグル) */
         layer2 {
             label = "WM_ON";
             bindings = <
