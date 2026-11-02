@@ -160,10 +160,10 @@
         layer5 {
             label = "MOUSE";
             bindings = <
-&trans     &mkp MB4         &trans    &mkp MB5  &trans  &trans  &mkp MB4  &trans    &mkp MB5         &trans
-&trans     &mkp MB2         &mkp MB3  &mkp MB1  &trans  &trans  &mkp MB1  &mkp MB3  &mkp MB2         &trans
-&kp LCTRL  &trans           &trans    &trans    &trans  &trans  &trans    &trans    &trans           &kp RCTRL
-&kp LSHFT  &lt_scroll 7 0   &trans    &trans    &trans  &trans  &trans    &trans    &lt_scroll 7 0   &kp RSHFT
+&trans     &mkp MB4          &trans       &mkp MB5           &trans  &trans  &mkp MB4          &trans       &mkp MB5           &trans
+&trans     &mkp MB2          &mkp MB3     &mkp MB1           &trans  &trans  &mkp MB1          &mkp MB3     &mkp MB2           &trans
+&kp LCTRL  &kp LG(LC(LEFT))  &kp LG(TAB)  &kp LG(LC(RIGHT))  &trans  &trans  &kp LG(LC(LEFT))  &kp LG(TAB)  &kp LG(LC(RIGHT))  &kp RCTRL
+&kp LSHFT  &lt_scroll 7 0    &trans       &trans             &trans  &trans  &trans            &trans       &lt_scroll 7 0     &kp RSHFT
             >;
         };
 
@@ -193,10 +193,10 @@
         layer8 {
             label = "AUTO_MOUSE";
             bindings = <
-&trans     &mkp MB4         &trans    &mkp MB5  &trans  &trans  &mkp MB4  &trans    &mkp MB5         &trans
-&trans     &mkp MB2         &mkp MB3  &mkp MB1  &trans  &trans  &mkp MB1  &mkp MB3  &mkp MB2         &trans
-&kp LCTRL  &trans           &trans    &trans    &trans  &trans  &trans    &trans    &trans           &kp RCTRL
-&kp LSHFT  &lt_scroll 7 0   &trans    &trans    &trans  &trans  &trans    &trans    &lt_scroll 7 0   &kp RSHFT
+&trans     &mkp MB4          &trans       &mkp MB5           &trans  &trans  &mkp MB4          &trans       &mkp MB5           &trans
+&trans     &mkp MB2          &mkp MB3     &mkp MB1           &trans  &trans  &mkp MB1          &mkp MB3     &mkp MB2           &trans
+&kp LCTRL  &kp LG(LC(LEFT))  &kp LG(TAB)  &kp LG(LC(RIGHT))  &trans  &trans  &kp LG(LC(LEFT))  &kp LG(TAB)  &kp LG(LC(RIGHT))  &kp RCTRL
+&kp LSHFT  &lt_scroll 7 0    &trans       &trans             &trans  &trans  &trans            &trans       &lt_scroll 7 0     &kp RSHFT
             >;
         };
     };
