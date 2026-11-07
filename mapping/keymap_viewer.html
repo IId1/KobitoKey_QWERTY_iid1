@@ -146,6 +146,57 @@
     gap: 8px;
     padding: 0 4px;
   }
+
+  #printContainer {
+    display: none;
+  }
+
+  @media print {
+    @page {
+      size: landscape;
+      margin: 0;
+    }
+    header, .tabs-bar, main {
+      display: none !important;
+    }
+    html, body {
+      background: #ffffff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    #printContainer {
+      display: block !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .print-page {
+      page-break-after: always;
+      break-after: page;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+      padding: 6mm;
+      background: #ffffff;
+    }
+    .print-page:last-child {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .print-page canvas {
+      max-width: 100% !important;
+      max-height: 100% !important;
+      width: auto !important;
+      height: auto !important;
+      object-fit: contain;
+      display: block;
+      margin: auto;
+    }
+  }
 </style>
 </head>
 <body>
@@ -183,6 +234,8 @@
     </div>
   </div>
 </main>
+
+<div id="printContainer"></div>
 
 <script>
 // ============================================================================
@@ -255,14 +308,18 @@ const COMBOS = [
   { a: 12, b: 13, pair: "12 + 13", keys: "D + F", out: "トラボ切替", badge: "TB切替" },
   { a: 16, b: 17, pair: "16 + 17", keys: "J + K", out: "トラボ切替", badge: "TB切替" },
   { a: 22, b: 23, pair: "22 + 23", keys: "C + V", out: "WM切替",     badge: "WM切替" },
-  { a: 26, b: 27, pair: "26 + 27", keys: "M + ,", out: "WM切替",     badge: "WM切替" }
+  { a: 26, b: 27, pair: "26 + 27", keys: "M + ,", out: "WM切替",     badge: "WM切替" },
+  { a: 28, b: 29, pair: "28 + 29", keys: ". + '", out: "Shift",     badge: "Shift" },
+  { a: 38, b: 39, pair: "38 + 39", keys: "- + /", out: "Alt",       badge: "Alt" }
 ];
 
 const COMBO_TABLE_ROWS = [
   { pair: "0 + 1",           keys: "Q + W",     out: "ESC",                                col: "#0d9488" },
   { pair: "10 + 11",         keys: "A + S",     out: "TAB",                                col: "#0d9488" },
   { pair: "12+13 / 16+17",   keys: "DF / JK",   out: "[L0] トラボ(自動マウス+移動) ON/OFF", col: "#0284c7" },
-  { pair: "22+23 / 26+27",   keys: "CV / M,",   out: "[L0] WristMouse カーソル ON/OFF",    col: "#6d28d9" }
+  { pair: "22+23 / 26+27",   keys: "CV / M,",   out: "[L0] WristMouse カーソル ON/OFF",    col: "#6d28d9" },
+  { pair: "28 + 29",         keys: ". + '",     out: "[L0] Shift (RSHFT)",                 col: "#d97706" },
+  { pair: "38 + 39",         keys: "- + /",     out: "[L0] Alt (RALT)",                    col: "#ea580c" }
 ];
 
 // ============================================================================
@@ -1134,8 +1191,43 @@ function downloadModePng(mode, filename) {
   triggerCanvasDownload(off, filename);
 }
 
+function setupPrintPages() {
+  const container = document.getElementById("printContainer");
+  if (!container) return;
+  container.innerHTML = "";
+
+  function addPage(renderer) {
+    const page = document.createElement("div");
+    page.className = "print-page";
+    const cvs = document.createElement("canvas");
+    renderer(cvs);
+    page.appendChild(cvs);
+    container.appendChild(page);
+  }
+
+  // 1. 一体型シート (サマリー全体図 & 割り当て表)
+  addPage(cvs => renderSummarySheetCanvas(cvs));
+
+  // 2. 番号マップ単体 (0〜42)
+  addPage(cvs => {
+    cvs.width = 1440;
+    cvs.height = 760;
+    renderNumberMapScene(cvs.getContext("2d"), 0, 0, 1);
+  });
+
+  // 3〜7. 各レイヤー単体 (Layer 0 〜 4)
+  for (let i = 0; i < LAYERS.length; i++) {
+    addPage(cvs => {
+      cvs.width = 1440;
+      cvs.height = 760;
+      renderLayerScene(cvs.getContext("2d"), LAYERS[i], 0, 0, 1);
+    });
+  }
+}
+
 // 初期描画
 setMode("summary", "📊 一体型シート（番号マップ ＋ 全レイヤー ＋ 対応表）");
+setupPrintPages();
 </script>
 </body>
 </html>

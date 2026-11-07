@@ -97,6 +97,26 @@
             layers = <0 1 2 8>;
             bindings = <&tog 2>;
         };
+
+        /*
+         * 28+29 (. + ') 同時押し: Right Shift
+         */
+        combo_shift {
+            timeout-ms = <50>;
+            key-positions = <28 29>;
+            layers = <0 1 2 8>;
+            bindings = <&kp RSHFT>;
+        };
+
+        /*
+         * 38+39 (- + /) 同時押し: Right Alt
+         */
+        combo_alt {
+            timeout-ms = <50>;
+            key-positions = <38 39>;
+            layers = <0 1 2 8>;
+            bindings = <&kp RALT>;
+        };
     };
 
     keymap {
